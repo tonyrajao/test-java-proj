@@ -1,0 +1,127 @@
+@startuml Content-PubSub-System
+
+' Style and theme
+skinparam classAttributeIconSize 0
+skinparam style strictuml
+skinparam backgroundColor white
+skinparam class {
+    BackgroundColor white
+    ArrowColor #2688d4
+    BorderColor #2688d4
+}
+
+' Enums
+enum UserType {
+    PUBLISHER
+    SUBSCRIBER
+}
+
+' Models
+class User {
+    -String id
+    -String username
+    -String email
+    -String password
+    -UserType type
+    -Instant createdAt
+    -Instant lastUpdatedAt
+    +getters()
+    +setters()
+}
+
+class Content {
+    -String id
+    -String publisherId
+    -String title
+    -String body
+    -Set<String> keywords
+    -Instant createdAt
+    +getters()
+    +setters()
+}
+
+class Subscription {
+    -String id
+    -String subscriberId
+    -Set<String> keywords
+    -boolean active
+    -Instant createdAt
+    -Instant updatedAt
+    +addKeyword()
+    +removeKeyword()
+    +getters()
+    +setters()
+}
+
+' Services
+class UserService {
+    -UserRepository userRepository
+    -ContentRepository contentRepository
+    -SubscriptionRepository subscriptionRepository
+    +createUser()
+    +findByUsername()
+    +deleteUser()
+}
+
+class ContentPublisher {
+    -KafkaProducer producer
+    -ContentRepository contentRepository
+    -boolean isActive
+    +publish()
+    +getPublisherContent()
+}
+
+class ContentSubscriber {
+    -KafkaConsumer consumer
+    -SubscriptionService subscriptionService
+    -EmailService emailService
+    -boolean isActive
+    +addSubscription()
+    +removeSubscription()
+    +getNotifications()
+}
+
+class SubscriptionService {
+    -SubscriptionRepository subscriptionRepository
+    +createSubscription()
+    +removeSubscription()
+    +getSubscriberKeywords()
+    +deleteAllSubscriptions()
+}
+
+class EmailService {
+    +sendContentNotification()
+}
+
+' Repositories
+interface UserRepository {
+    +findByUsername()
+    +deleteById()
+}
+
+interface ContentRepository {
+    +findByPublisherId()
+    +deleteByPublisherId()
+}
+
+interface SubscriptionRepository {
+    +findBySubscriberId()
+    +findBySubscriberIdAndKeyword()
+    +deleteBySubscriberId()
+}
+
+' Relationships
+User "1" -- "*" Content : publishes >
+User "1" -- "*" Subscription : subscribes >
+Content "*" -- "*" Subscription : matches >
+
+UserService --> UserRepository : uses >
+UserService --> ContentRepository : uses >
+UserService --> SubscriptionRepository : uses >
+
+ContentPublisher --> ContentRepository : uses >
+ContentSubscriber --> SubscriptionService : uses >
+ContentSubscriber --> EmailService : uses >
+SubscriptionService --> SubscriptionRepository : uses >
+
+@enduml
